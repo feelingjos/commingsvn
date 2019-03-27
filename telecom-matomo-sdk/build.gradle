@@ -1,0 +1,120 @@
+apply plugin: 'java'
+apply plugin: 'maven'
+//IntelliJ IDEA 插件
+apply plugin: 'idea'
+
+apply plugin: 'maven-publish'
+
+//apply from: 'builduploadsource.gradle'
+
+task sourceJar (type:Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
+publishing {
+    publications {
+        myPublication(MavenPublication) {
+            from components.java
+            artifactId "$project.name"
+            version "$version"
+            artifact(sourceJar) {
+                classifier = 'sources'
+            }
+        }
+    }
+    repositories {
+        maven {
+            url "http://118.89.19.58:10089/repository/unizone-repo/"
+            credentials {
+                username = 'admin'
+                password = 'admin123'
+            }
+        }
+    }
+}
+jar {
+    baseName = "$project.name"
+    version = "$version"
+}
+
+group 'tech.unizone.foundation.components'
+version '1.0.1'
+
+
+//编译JAVA文件时采用UTF-8
+tasks.withType(JavaCompile) {
+    options.encoding = "UTF-8"
+}
+
+//设置编码，与之前的options.encoding = "UTF-8" 重复
+[compileJava,compileTestJava,javadoc]*.options*.encoding = "UTF-8"
+
+// Uses JDK 8
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+repositories {
+    maven { url "http://maven.aliyun.com/nexus/content/groups/public/" }
+
+    mavenCentral()
+
+    maven {
+        url 'http://repo.spring.io/milestone'
+    }
+    jcenter()
+
+    //依赖maven远程仓库
+    maven {
+        //url ""
+        url "http://118.89.19.58:10089/repository/unizone-repo/"
+//        if (project.version.endsWith('-SNAPSHOT')) {
+//            url = "快照版本的nexus仓库地址"
+//        } else {
+//            url = "release版本的仓库地址"
+//        }
+
+        credentials {
+            username 'admin'
+            password 'admin123'
+        }
+    }
+}
+
+dependencies {
+    compile 'cn.hutool:hutool-all:4.0.12'
+    testCompile group: 'junit', name: 'junit', version: '4.12'
+}
+
+//发布构件
+uploadArchives{
+    repositories{
+        mavenDeployer{
+            //发布到maven本地文件
+            //repository(url:"file://localhost/tmp/maven-rpo/")
+
+            //发布到maven远程仓库
+            repository(url: "http://118.89.19.58:10089/repository/unizone-repo/") {
+                authentication(userName: "admin", password: "admin123")
+            }
+        }
+
+        //发布到maven本地仓库
+        mavenLocal()
+        //更多的仓库.....
+    }
+}
+
+//用gradle wrapper构建统一环境版本
+task wrapper(type: Wrapper) {
+    gradleVersion = '4.7'
+    distributionUrl = "https://services.gradle.org/distributions/gradle-$gradleVersion-all.zip"
+}
+
+idea {
+    module {
+        inheritOutputDirs = false
+        outputDir = file("$buildDir/classes/main/")
+        testOutputDir = file("$buildDir/classes/test/")
+    }
+}
